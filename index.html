@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Local Bulk Image Compressor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -43,6 +44,14 @@
         .warning-box {
             background: #fff3cd;
             border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
             padding: 15px;
             margin: 20px 0;
             border-radius: 5px;
@@ -115,10 +124,39 @@
             display: block;
         }
         
+        .control-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .control-group {
+            flex: 1;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .control-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .control-group input[type="number"] {
+            width: 100px;
+        }
+        
         .control-buttons {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
         }
         
         button {
@@ -157,26 +195,18 @@
             background: #c82333;
         }
         
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover:not(:disabled) {
+            background: #218838;
+        }
+        
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-        }
-        
-        .batch-size-control {
-            margin-bottom: 20px;
-        }
-        
-        .batch-size-control label {
-            display: block;
-            margin-bottom: 5px;
-            color: #666;
-        }
-        
-        .batch-size-control input {
-            width: 100px;
-            padding: 5px;
-            border: 1px solid #ddd;
-            border-radius: 3px;
         }
         
         .progress-container {
@@ -244,6 +274,30 @@
             color: #666;
         }
         
+        .file-size-info {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: #e8f4ff;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .size-stat {
+            text-align: center;
+        }
+        
+        .size-label {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .size-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0066cc;
+        }
+        
         .log-container {
             max-height: 300px;
             overflow-y: auto;
@@ -274,30 +328,59 @@
             background: #d1ecf1;
             color: #0c5460;
         }
+        
+        .download-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none;
+            text-align: center;
+        }
+        
+        .download-section.active {
+            display: block;
+        }
+        
+        .download-info {
+            margin-bottom: 20px;
+        }
+        
+        .file-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+        
+        .file-size {
+            color: #666;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>🖼️ Local Bulk Image Compressor</h1>
-        <p>Compress images to approximately 300KB each, directly in your browser</p>
+        <p>Compress images to approximately 300KB each and download as a single ZIP file</p>
         
         <div class="info-box">
-            <strong>✨ How it works:</strong> All processing happens locally in your browser. No images are uploaded to any server.
+            <strong>✨ How it works:</strong> All processing happens locally in your browser. Images are compressed and packaged into a single ZIP file for easy download.
         </div>
         
-        <div class="warning-box">
-            <strong>⚠️ Important:</strong> For best results with large batches (100+ images), we process images sequentially to prevent browser crashes and ensure all images are compressed successfully.
+        <div class="success-box">
+            <strong>📦 ZIP Download:</strong> All compressed images will be packaged into a single ZIP file, eliminating individual download issues!
         </div>
     </div>
 
     <div class="constraints">
         <h3>📋 Usage Guidelines</h3>
         <ul>
-            <li><strong>Recommended:</strong> Process in batches of 50-100 images for optimal performance</li>
-            <li><strong>Maximum tested:</strong> Up to 1000 images (may take significant time)</li>
+            <li><strong>No download limits:</strong> Process hundreds of images without browser download restrictions</li>
+            <li><strong>Single file output:</strong> All images packaged in one convenient ZIP file</li>
             <li><strong>Processing speed:</strong> ~1-3 seconds per image depending on size and device</li>
+            <li><strong>Memory usage:</strong> Very large batches (500+ images) may use significant RAM</li>
             <li><strong>Browser limits:</strong> Keep browser tab active during processing</li>
-            <li><strong>Memory usage:</strong> Large batches may use significant RAM</li>
         </ul>
     </div>
 
@@ -309,15 +392,21 @@
     <input type="file" id="file-input" multiple accept="image/*">
 
     <div class="controls" id="controls">
-        <div class="batch-size-control">
-            <label for="batch-size">Concurrent processing limit (lower = more stable, higher = faster):</label>
-            <input type="number" id="batch-size" value="3" min="1" max="10">
+        <div class="control-row">
+            <div class="control-group">
+                <label for="zip-name">ZIP file name:</label>
+                <input type="text" id="zip-name" value="compressed_images" placeholder="Enter filename (without .zip)">
+            </div>
+            <div class="control-group">
+                <label for="batch-size">Processing speed (1-10):</label>
+                <input type="number" id="batch-size" value="5" min="1" max="10">
+            </div>
         </div>
         
         <div class="control-buttons">
             <button class="btn-primary" id="start-btn">Start Compression</button>
             <button class="btn-secondary" id="pause-btn" disabled>Pause</button>
-            <button class="btn-danger" id="cancel-btn">Cancel All</button>
+            <button class="btn-danger" id="cancel-btn">Cancel</button>
         </div>
     </div>
 
@@ -344,6 +433,21 @@
             <div class="progress-bar" id="progress-bar">0%</div>
         </div>
         
+        <div class="file-size-info">
+            <div class="size-stat">
+                <div class="size-label">Original Size</div>
+                <div class="size-value" id="original-size">0 MB</div>
+            </div>
+            <div class="size-stat">
+                <div class="size-label">Compressed Size</div>
+                <div class="size-value" id="compressed-size">0 MB</div>
+            </div>
+            <div class="size-stat">
+                <div class="size-label">Space Saved</div>
+                <div class="size-value" id="space-saved">0%</div>
+            </div>
+        </div>
+        
         <div class="current-file" id="current-file">
             Waiting to start...
         </div>
@@ -351,31 +455,53 @@
         <div class="log-container" id="log-container"></div>
     </div>
 
+    <div class="download-section" id="download-section">
+        <div class="download-info">
+            <h3>✅ Compression Complete!</h3>
+            <p class="file-name" id="final-zip-name">compressed_images.zip</p>
+            <p class="file-size" id="final-zip-size">Size: 0 MB</p>
+        </div>
+        <button class="btn-success" id="download-btn">Download ZIP File</button>
+    </div>
+
     <script>
         // State management
         let fileQueue = [];
+        let originalFiles = [];
+        let zip = null;
         let isProcessing = false;
         let isPaused = false;
         let shouldCancel = false;
         let completedCount = 0;
         let failedCount = 0;
-        let currentBatchSize = 3;
+        let currentBatchSize = 5;
+        let totalOriginalSize = 0;
+        let totalCompressedSize = 0;
+        let finalZipBlob = null;
         
         // DOM elements
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
         const controls = document.getElementById('controls');
         const progressContainer = document.getElementById('progress-container');
+        const downloadSection = document.getElementById('download-section');
         const startBtn = document.getElementById('start-btn');
         const pauseBtn = document.getElementById('pause-btn');
         const cancelBtn = document.getElementById('cancel-btn');
+        const downloadBtn = document.getElementById('download-btn');
         const batchSizeInput = document.getElementById('batch-size');
+        const zipNameInput = document.getElementById('zip-name');
         const progressBar = document.getElementById('progress-bar');
         const currentFileDiv = document.getElementById('current-file');
         const logContainer = document.getElementById('log-container');
         const completedCountSpan = document.getElementById('completed-count');
         const failedCountSpan = document.getElementById('failed-count');
         const totalCountSpan = document.getElementById('total-count');
+        const originalSizeSpan = document.getElementById('original-size');
+        const compressedSizeSpan = document.getElementById('compressed-size');
+        const spaceSavedSpan = document.getElementById('space-saved');
+        const finalZipName = document.getElementById('final-zip-name');
+        const finalZipSize = document.getElementById('final-zip-size');
         
         // Event listeners
         dropZone.addEventListener('click', () => fileInput.click());
@@ -395,6 +521,7 @@
         startBtn.addEventListener('click', startProcessing);
         pauseBtn.addEventListener('click', togglePause);
         cancelBtn.addEventListener('click', cancelProcessing);
+        downloadBtn.addEventListener('click', downloadZip);
         batchSizeInput.addEventListener('change', (e) => {
             currentBatchSize = parseInt(e.target.value);
         });
@@ -411,30 +538,48 @@
                 return;
             }
             
-            fileQueue = imageFiles;
+            fileQueue = [...imageFiles];
+            originalFiles = [...imageFiles];
             resetProgress();
             controls.classList.add('active');
             progressContainer.classList.add('active');
+            downloadSection.classList.remove('active');
             totalCountSpan.textContent = fileQueue.length;
             
-            addLog(`Loaded ${fileQueue.length} images. Click "Start Compression" to begin.`, 'info');
+            // Calculate total original size
+            totalOriginalSize = originalFiles.reduce((sum, file) => sum + file.size, 0);
+            originalSizeSpan.textContent = formatFileSize(totalOriginalSize);
+            
+            // Set default zip name based on timestamp
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+            zipNameInput.value = `compressed_images_${timestamp}`;
+            
+            addLog(`Loaded ${fileQueue.length} images (${formatFileSize(totalOriginalSize)}). Click "Start Compression" to begin.`, 'info');
             
             if (fileQueue.length > 100) {
-                addLog(`Large batch detected (${fileQueue.length} images). Processing will take approximately ${Math.round(fileQueue.length * 2 / 60)} minutes.`, 'info');
+                const estimatedTime = Math.round(fileQueue.length * 2 / 60);
+                addLog(`Large batch detected. Estimated time: ${estimatedTime} minutes`, 'info');
             }
         }
         
         function resetProgress() {
             completedCount = 0;
             failedCount = 0;
+            totalCompressedSize = 0;
             completedCountSpan.textContent = '0';
             failedCountSpan.textContent = '0';
+            compressedSizeSpan.textContent = '0 MB';
+            spaceSavedSpan.textContent = '0%';
             updateProgressBar();
             logContainer.innerHTML = '';
+            finalZipBlob = null;
         }
         
         async function startProcessing() {
             if (isProcessing || fileQueue.length === 0) return;
+            
+            // Initialize new ZIP
+            zip = new JSZip();
             
             isProcessing = true;
             shouldCancel = false;
@@ -443,6 +588,8 @@
             startBtn.disabled = true;
             pauseBtn.disabled = false;
             batchSizeInput.disabled = true;
+            zipNameInput.disabled = true;
+            downloadSection.classList.remove('active');
             
             addLog(`Starting compression with batch size: ${currentBatchSize}`, 'info');
             
@@ -459,6 +606,10 @@
                 // Process batch concurrently
                 const promises = batch.map(file => processImage(file));
                 await Promise.all(promises);
+            }
+            
+            if (!shouldCancel && completedCount > 0) {
+                await createZipFile();
             }
             
             finishProcessing();
@@ -478,15 +629,58 @@
             addLog('Processing cancelled by user', 'error');
         }
         
+        async function createZipFile() {
+            currentFileDiv.textContent = 'Creating ZIP file...';
+            addLog('Creating ZIP file...', 'info');
+            
+            try {
+                finalZipBlob = await zip.generateAsync({
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 9 }
+                }, function updateCallback(metadata) {
+                    const progress = Math.round(metadata.percent);
+                    currentFileDiv.textContent = `Creating ZIP file... ${progress}%`;
+                });
+                
+                const zipFileName = `${zipNameInput.value}.zip`;
+                finalZipName.textContent = zipFileName;
+                finalZipSize.textContent = `Size: ${formatFileSize(finalZipBlob.size)}`;
+                
+                downloadSection.classList.add('active');
+                addLog(`ZIP file created successfully: ${formatFileSize(finalZipBlob.size)}`, 'success');
+                
+            } catch (error) {
+                addLog(`Failed to create ZIP file: ${error.message}`, 'error');
+            }
+        }
+        
+        function downloadZip() {
+            if (!finalZipBlob) return;
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(finalZipBlob);
+            link.download = `${zipNameInput.value}.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            setTimeout(() => URL.revokeObjectURL(link.href), 100);
+            
+            addLog('ZIP file downloaded successfully!', 'success');
+        }
+        
         function finishProcessing() {
             isProcessing = false;
             startBtn.disabled = false;
             pauseBtn.disabled = true;
             batchSizeInput.disabled = false;
+            zipNameInput.disabled = false;
             
             if (completedCount > 0 || failedCount > 0) {
-                addLog(`Processing complete! Successfully compressed: ${completedCount}, Failed: ${failedCount}`, 
-                       failedCount > 0 ? 'error' : 'success');
+                const message = `Processing complete! Successfully compressed: ${completedCount}, Failed: ${failedCount}`;
+                addLog(message, failedCount > 0 ? 'error' : 'success');
+                currentFileDiv.textContent = message;
             }
         }
         
@@ -506,10 +700,25 @@
                 
                 reader.onload = async (e) => {
                     try {
-                        await compressImage(e.target.result, file.name);
+                        const compressedBlob = await compressImage(e.target.result, file.name);
+                        
+                        // Add to ZIP instead of downloading
+                        const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+                        const compressedFileName = `${fileNameWithoutExt}_compressed.jpg`;
+                        zip.file(compressedFileName, compressedBlob);
+                        
+                        totalCompressedSize += compressedBlob.size;
+                        compressedSizeSpan.textContent = formatFileSize(totalCompressedSize);
+                        
+                        const savedPercentage = Math.round((1 - totalCompressedSize / totalOriginalSize) * 100);
+                        spaceSavedSpan.textContent = `${savedPercentage}%`;
+                        
                         completedCount++;
                         completedCountSpan.textContent = completedCount;
-                        addLog(`✓ Compressed: ${file.name}`, 'success');
+                        
+                        const sizeInfo = `${formatFileSize(file.size)} → ${formatFileSize(compressedBlob.size)}`;
+                        addLog(`✓ ${file.name} (${sizeInfo})`, 'success');
+                        
                     } catch (error) {
                         failedCount++;
                         failedCountSpan.textContent = failedCount;
@@ -591,18 +800,7 @@
                             iterations++;
                         } while (true);
                         
-                        // Create and trigger download
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
-                        link.download = `compressed_${fileName}`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        
-                        // Clean up
-                        setTimeout(() => URL.revokeObjectURL(link.href), 100);
-                        
-                        resolve();
+                        resolve(blob);
                     } catch (error) {
                         reject(error);
                     }
@@ -619,6 +817,14 @@
             
             progressBar.style.width = percentage + '%';
             progressBar.textContent = percentage + '%';
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
         
         function addLog(message, type = 'info') {
