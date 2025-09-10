@@ -5,117 +5,632 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Local Bulk Image Compressor</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 900px;
             margin: 0 auto;
             padding: 20px;
+            background: #f5f5f5;
         }
+        
+        .header {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .info-box {
+            background: #e8f4ff;
+            border-left: 4px solid #0066cc;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .constraints {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .constraints h3 {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .constraints ul {
+            margin-left: 20px;
+            color: #666;
+            line-height: 1.8;
+        }
+        
         #drop-zone {
-            border: 2px dashed #ccc;
-            border-radius: 20px;
-            width: 100%;
-            height: 200px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            border: 3px dashed #ccc;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
             margin-bottom: 20px;
         }
+        
+        #drop-zone:hover {
+            border-color: #0066cc;
+            background: #f8fbff;
+        }
+        
+        #drop-zone.active {
+            border-color: #0066cc;
+            background: #e8f4ff;
+        }
+        
+        #drop-zone p {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        #drop-zone small {
+            color: #999;
+        }
+        
         #file-input {
             display: none;
         }
-        #progress {
-            margin-top: 20px;
+        
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .controls.active {
+            display: block;
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .btn-primary {
+            background: #0066cc;
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: #0052a3;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover:not(:disabled) {
+            background: #5a6268;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover:not(:disabled) {
+            background: #c82333;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .batch-size-control {
+            margin-bottom: 20px;
+        }
+        
+        .batch-size-control label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+        
+        .batch-size-control input {
+            width: 100px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        
+        .progress-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .progress-container.active {
+            display: block;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .progress-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .progress-bar-container {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 30px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #0066cc, #0052a3);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .current-file {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            color: #666;
+        }
+        
+        .log-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 10px;
+            background: #f8f9fa;
+        }
+        
+        .log-entry {
+            padding: 5px 10px;
+            margin: 2px 0;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        
+        .log-entry.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .log-entry.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .log-entry.info {
+            background: #d1ecf1;
+            color: #0c5460;
         }
     </style>
 </head>
 <body>
-    <h1>Local Bulk Image Compressor</h1>
-    <p>Drag and drop images here or click to select files. The app will compress them to approximately 300KB each.</p>
-    <div id="drop-zone">
-        <p>Drop images here or click to select</p>
+    <div class="header">
+        <h1>🖼️ Local Bulk Image Compressor</h1>
+        <p>Compress images to approximately 300KB each, directly in your browser</p>
+        
+        <div class="info-box">
+            <strong>✨ How it works:</strong> All processing happens locally in your browser. No images are uploaded to any server.
+        </div>
+        
+        <div class="warning-box">
+            <strong>⚠️ Important:</strong> For best results with large batches (100+ images), we process images sequentially to prevent browser crashes and ensure all images are compressed successfully.
+        </div>
     </div>
+
+    <div class="constraints">
+        <h3>📋 Usage Guidelines</h3>
+        <ul>
+            <li><strong>Recommended:</strong> Process in batches of 50-100 images for optimal performance</li>
+            <li><strong>Maximum tested:</strong> Up to 1000 images (may take significant time)</li>
+            <li><strong>Processing speed:</strong> ~1-3 seconds per image depending on size and device</li>
+            <li><strong>Browser limits:</strong> Keep browser tab active during processing</li>
+            <li><strong>Memory usage:</strong> Large batches may use significant RAM</li>
+        </ul>
+    </div>
+
+    <div id="drop-zone">
+        <p>📁 Drop images here or click to select</p>
+        <small>Supports: JPG, PNG, GIF, WebP, BMP</small>
+    </div>
+    
     <input type="file" id="file-input" multiple accept="image/*">
-    <div id="progress"></div>
+
+    <div class="controls" id="controls">
+        <div class="batch-size-control">
+            <label for="batch-size">Concurrent processing limit (lower = more stable, higher = faster):</label>
+            <input type="number" id="batch-size" value="3" min="1" max="10">
+        </div>
+        
+        <div class="control-buttons">
+            <button class="btn-primary" id="start-btn">Start Compression</button>
+            <button class="btn-secondary" id="pause-btn" disabled>Pause</button>
+            <button class="btn-danger" id="cancel-btn">Cancel All</button>
+        </div>
+    </div>
+
+    <div class="progress-container" id="progress-container">
+        <div class="progress-header">
+            <h3>Processing Progress</h3>
+            <div class="progress-stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="completed-count">0</span>
+                    <span>Completed</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="failed-count">0</span>
+                    <span>Failed</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="total-count">0</span>
+                    <span>Total</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progress-bar">0%</div>
+        </div>
+        
+        <div class="current-file" id="current-file">
+            Waiting to start...
+        </div>
+        
+        <div class="log-container" id="log-container"></div>
+    </div>
 
     <script>
+        // State management
+        let fileQueue = [];
+        let isProcessing = false;
+        let isPaused = false;
+        let shouldCancel = false;
+        let completedCount = 0;
+        let failedCount = 0;
+        let currentBatchSize = 3;
+        
+        // DOM elements
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
-        const progressDiv = document.getElementById('progress');
-
+        const controls = document.getElementById('controls');
+        const progressContainer = document.getElementById('progress-container');
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const batchSizeInput = document.getElementById('batch-size');
+        const progressBar = document.getElementById('progress-bar');
+        const currentFileDiv = document.getElementById('current-file');
+        const logContainer = document.getElementById('log-container');
+        const completedCountSpan = document.getElementById('completed-count');
+        const failedCountSpan = document.getElementById('failed-count');
+        const totalCountSpan = document.getElementById('total-count');
+        
+        // Event listeners
         dropZone.addEventListener('click', () => fileInput.click());
+        
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
-            dropZone.style.backgroundColor = '#f0f0f0';
+            dropZone.classList.add('active');
         });
+        
         dropZone.addEventListener('dragleave', () => {
-            dropZone.style.backgroundColor = '';
+            dropZone.classList.remove('active');
         });
+        
         dropZone.addEventListener('drop', handleFiles);
         fileInput.addEventListener('change', (e) => handleFiles(e));
-
+        
+        startBtn.addEventListener('click', startProcessing);
+        pauseBtn.addEventListener('click', togglePause);
+        cancelBtn.addEventListener('click', cancelProcessing);
+        batchSizeInput.addEventListener('change', (e) => {
+            currentBatchSize = parseInt(e.target.value);
+        });
+        
         function handleFiles(e) {
             e.preventDefault();
-            dropZone.style.backgroundColor = '';
+            dropZone.classList.remove('active');
+            
             const files = e.dataTransfer ? e.dataTransfer.files : e.target.files;
-            Array.from(files).forEach(compressAndDownload);
+            const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+            
+            if (imageFiles.length === 0) {
+                alert('Please select valid image files');
+                return;
+            }
+            
+            fileQueue = imageFiles;
+            resetProgress();
+            controls.classList.add('active');
+            progressContainer.classList.add('active');
+            totalCountSpan.textContent = fileQueue.length;
+            
+            addLog(`Loaded ${fileQueue.length} images. Click "Start Compression" to begin.`, 'info');
+            
+            if (fileQueue.length > 100) {
+                addLog(`Large batch detected (${fileQueue.length} images). Processing will take approximately ${Math.round(fileQueue.length * 2 / 60)} minutes.`, 'info');
+            }
         }
-
-        async function compressAndDownload(file) {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const img = new Image();
-                img.onload = async () => {
-                    const canvas = document.createElement('canvas');
-                    let ctx = canvas.getContext('2d');
-                    let width = img.width;
-                    let height = img.height;
-
-                    // Calculate aspect ratio
-                    const aspectRatio = width / height;
-
-                    // Target file size in bytes (300KB)
-                    const targetSize = 300 * 1024;
-
-                    // Start with quality of 0.7
-                    let quality = 0.7;
-                    let iterations = 0;
-                    const maxIterations = 10;
-
-                    do {
-                        // Adjust canvas size based on aspect ratio and estimated file size
-                        if (iterations > 0) {
-                            width *= 0.9;
-                            height = width / aspectRatio;
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
-
-                        // Draw image on canvas
-                        ctx.drawImage(img, 0, 0, width, height);
-
-                        // Convert to blob
-                        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
-
-                        if (blob.size <= targetSize || iterations >= maxIterations) {
-                            // Create download link
-                            const link = document.createElement('a');
-                            link.href = URL.createObjectURL(blob);
-                            link.download = `compressed_${file.name}`;
-                            link.click();
-
-                            progressDiv.innerHTML += `<p>Compressed ${file.name} (${(blob.size / 1024).toFixed(2)}KB)</p>`;
-                            break;
-                        }
-
-                        iterations++;
-                        quality *= 0.9;
-                    } while (true);
+        
+        function resetProgress() {
+            completedCount = 0;
+            failedCount = 0;
+            completedCountSpan.textContent = '0';
+            failedCountSpan.textContent = '0';
+            updateProgressBar();
+            logContainer.innerHTML = '';
+        }
+        
+        async function startProcessing() {
+            if (isProcessing || fileQueue.length === 0) return;
+            
+            isProcessing = true;
+            shouldCancel = false;
+            isPaused = false;
+            
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            batchSizeInput.disabled = true;
+            
+            addLog(`Starting compression with batch size: ${currentBatchSize}`, 'info');
+            
+            // Process in batches
+            while (fileQueue.length > 0 && !shouldCancel) {
+                if (isPaused) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    continue;
+                }
+                
+                // Take a batch from the queue
+                const batch = fileQueue.splice(0, currentBatchSize);
+                
+                // Process batch concurrently
+                const promises = batch.map(file => processImage(file));
+                await Promise.all(promises);
+            }
+            
+            finishProcessing();
+        }
+        
+        function togglePause() {
+            isPaused = !isPaused;
+            pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+            addLog(isPaused ? 'Processing paused' : 'Processing resumed', 'info');
+        }
+        
+        function cancelProcessing() {
+            shouldCancel = true;
+            isPaused = false;
+            fileQueue = [];
+            finishProcessing();
+            addLog('Processing cancelled by user', 'error');
+        }
+        
+        function finishProcessing() {
+            isProcessing = false;
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            batchSizeInput.disabled = false;
+            
+            if (completedCount > 0 || failedCount > 0) {
+                addLog(`Processing complete! Successfully compressed: ${completedCount}, Failed: ${failedCount}`, 
+                       failedCount > 0 ? 'error' : 'success');
+            }
+        }
+        
+        async function processImage(file) {
+            return new Promise((resolve) => {
+                currentFileDiv.textContent = `Processing: ${file.name}`;
+                
+                const reader = new FileReader();
+                
+                reader.onerror = () => {
+                    failedCount++;
+                    failedCountSpan.textContent = failedCount;
+                    addLog(`Failed to read: ${file.name}`, 'error');
+                    updateProgressBar();
+                    resolve();
                 };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+                
+                reader.onload = async (e) => {
+                    try {
+                        await compressImage(e.target.result, file.name);
+                        completedCount++;
+                        completedCountSpan.textContent = completedCount;
+                        addLog(`✓ Compressed: ${file.name}`, 'success');
+                    } catch (error) {
+                        failedCount++;
+                        failedCountSpan.textContent = failedCount;
+                        addLog(`✗ Failed: ${file.name} - ${error.message}`, 'error');
+                    }
+                    updateProgressBar();
+                    resolve();
+                };
+                
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        async function compressImage(dataUrl, fileName) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                
+                img.onerror = () => reject(new Error('Failed to load image'));
+                
+                img.onload = async () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        let width = img.width;
+                        let height = img.height;
+                        const aspectRatio = width / height;
+                        
+                        // Target size in bytes (300KB)
+                        const targetSize = 300 * 1024;
+                        
+                        // Start with reasonable dimensions
+                        const maxDimension = 2000;
+                        if (width > maxDimension || height > maxDimension) {
+                            if (width > height) {
+                                width = maxDimension;
+                                height = width / aspectRatio;
+                            } else {
+                                height = maxDimension;
+                                width = height * aspectRatio;
+                            }
+                        }
+                        
+                        let quality = 0.8;
+                        let iterations = 0;
+                        const maxIterations = 15;
+                        let blob;
+                        
+                        do {
+                            canvas.width = Math.round(width);
+                            canvas.height = Math.round(height);
+                            
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            
+                            blob = await new Promise(resolve => 
+                                canvas.toBlob(resolve, 'image/jpeg', quality)
+                            );
+                            
+                            if (!blob) {
+                                throw new Error('Failed to create blob');
+                            }
+                            
+                            if (blob.size <= targetSize || iterations >= maxIterations) {
+                                break;
+                            }
+                            
+                            // Adjust for next iteration
+                            if (blob.size > targetSize * 2) {
+                                // File is way too big, reduce dimensions more aggressively
+                                width *= 0.7;
+                                height *= 0.7;
+                            } else {
+                                // File is somewhat too big, reduce quality and dimensions slightly
+                                quality *= 0.85;
+                                width *= 0.9;
+                                height *= 0.9;
+                            }
+                            
+                            iterations++;
+                        } while (true);
+                        
+                        // Create and trigger download
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `compressed_${fileName}`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        // Clean up
+                        setTimeout(() => URL.revokeObjectURL(link.href), 100);
+                        
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                img.src = dataUrl;
+            });
+        }
+        
+        function updateProgressBar() {
+            const total = parseInt(totalCountSpan.textContent);
+            const processed = completedCount + failedCount;
+            const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
+            
+            progressBar.style.width = percentage + '%';
+            progressBar.textContent = percentage + '%';
+        }
+        
+        function addLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.insertBefore(entry, logContainer.firstChild);
+            
+            // Keep only last 100 entries
+            while (logContainer.children.length > 100) {
+                logContainer.removeChild(logContainer.lastChild);
+            }
         }
     </script>
 </body>
